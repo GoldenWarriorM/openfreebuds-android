@@ -60,26 +60,6 @@ APK is at `composeApp/build/outputs/apk/debug/`.
 ./gradlew :composeApp:assembleRelease
 ```
 
-## Releases
-
-GitHub Actions builds and signs an Android APK on every `v*` tag push. See [the release workflow](.github/workflows/release.yml).
-
-### Release secrets (repository → Settings → Secrets → Actions)
-
-| Secret | Purpose |
-|--------|---------|
-| `KEYSTORE_BASE64` | Base64-encoded Android signing keystore |
-| `KEY_ALIAS` | Keystore key alias |
-| `KEYSTORE_PASSWORD` | Keystore password |
-| `KEY_PASSWORD` | Key password (optional if same as keystore) |
-
-To create a release:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
 ## Project Structure
 
 ```
