@@ -2,6 +2,7 @@ package org.openfreebuds.se.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -133,7 +134,7 @@ private fun ConnectionHeader(
     val connected = state is ConnectionState.Connected
     val connecting = state is ConnectionState.Connecting
     Surface(
-        shape = MaterialTheme.shapes.extraLarge,
+        shape = RoundedCornerShape(36.dp),
         color = if (connected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {

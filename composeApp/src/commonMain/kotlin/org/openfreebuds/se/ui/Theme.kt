@@ -72,7 +72,7 @@ val SeShapes = Shapes(
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(20.dp),
     large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 val SeTypography = Typography(
