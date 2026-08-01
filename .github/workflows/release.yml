@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml', 'gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > ${{ runner.temp }}/release.keystore
+
+      - name: Build unsigned Android release APK
+        run: ./gradlew :composeApp:assembleRelease
+
+      - name: Find apksigner
+        id: find-apksigner
+        run: echo "path=$(ls $ANDROID_HOME/build-tools/*/apksigner | head -1)" >> $GITHUB_OUTPUT
+
+      - name: Validate signing secrets
+        run: |
+          if [[ -z "${{ secrets.KEY_ALIAS }}" ]]; then
+            echo "::error::KEY_ALIAS secret is not set"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]]; then
+            echo "::error::KEYSTORE_PASSWORD secret is not set"
+            exit 1
+          fi
+
+      - name: Sign APK with apksigner
+        run: |
+          set -x
+          SIGN_ARGS=(
+            --ks ${{ runner.temp }}/release.keystore
+            --ks-key-alias ${{ secrets.KEY_ALIAS }}
+            --ks-pass pass:${{ secrets.KEYSTORE_PASSWORD }}
+          )
+          if [[ -n "${{ secrets.KEY_PASSWORD }}" ]]; then
+            SIGN_ARGS+=(--key-pass pass:${{ secrets.KEY_PASSWORD }})
+          fi
+          APK_FILE=$(ls composeApp/build/outputs/apk/release/*.apk | head -1)
+          ${{ steps.find-apksigner.outputs.path }} sign \
+            "${SIGN_ARGS[@]}" \
+            "$APK_FILE"
+
+      - name: Rename APK
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cd composeApp/build/outputs/apk/release
+          for f in *.apk; do
+            mv "$f" "FreeBuds_SE-$VERSION.apk"
+          done
+
+      - name: Upload APK to Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: composeApp/build/outputs/apk/release/FreeBuds_SE-*.apk
