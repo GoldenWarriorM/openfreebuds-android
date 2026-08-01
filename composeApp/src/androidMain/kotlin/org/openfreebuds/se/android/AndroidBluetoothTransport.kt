@@ -175,7 +175,7 @@ class AndroidBluetoothTransport(
         }
         val remote = adapter.getRemoteDevice(device.address)
 
-        val sock = connectSocket(remote)
+        val sock = withContext(Dispatchers.IO) { connectSocket(remote) }
         if (sock == null) {
             _state.value = ConnectionState.Error(
                 "Could not connect to ${device.name}. Try again.",
