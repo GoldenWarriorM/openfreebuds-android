@@ -21,9 +21,16 @@
 
 ## Screenshots
 
-<p float="left">
-  <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/home.png" alt="Home screen" width="30%" />
-  <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/widget.jpg" alt="Home-screen widget" width="45%" />
+<p align="center">
+  <table><tr>
+    <td>
+      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/home.png" alt="Home screen" width="280" />
+    </td>
+    <td>
+      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/widget.jpg" alt="Home-screen widget" width="420" /><br/>
+      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/notification.jpg" alt="Battery notification" width="420" />
+    </td>
+  </tr></table>
 </p>
 
 ## Platforms
