@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openfreebuds.se.connection.ConnectionState
 import org.openfreebuds.se.connection.DeviceConnection
@@ -53,6 +55,7 @@ class AndroidBluetoothTransport(
 
     private var socket: BluetoothSocket? = null
     private var recvJob: kotlinx.coroutines.Job? = null
+    private val writeMutex = Mutex()
 
     var permissionLauncher: ActivityResultLauncher<String>? = null
     private var pendingDevice: SeDevice? = null
@@ -70,11 +73,49 @@ class AndroidBluetoothTransport(
         }
     }
 
+    private val aclStateReceiver = object : BroadcastReceiver() {
+        @SuppressLint("MissingPermission")
+        override fun onReceive(context: Context, intent: Intent) {
+            val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            if (device == null) return
+            val address = device.address ?: return
+            when (intent.action) {
+                BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                    _aclConnected.add(address)
+                    if (isLikelyFreeBudsSe(device.name)) {
+                        android.util.Log.d("FreeBudsSE", "ACL_CONNECTED: $address ${device.name}")
+                        onAclConnected?.invoke(address)
+                    }
+                }
+                BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                    _aclConnected.remove(address)
+                    android.util.Log.d("FreeBudsSE", "ACL_DISCONNECTED: $address")
+                    onAclDisconnected?.invoke(address)
+                }
+            }
+        }
+    }
+
+    /** Called when a FreeBuds SE becomes physically connected to the phone. */
+    var onAclConnected: ((String) -> Unit)? = null
+
+    /** Called when a FreeBuds SE drops its physical Bluetooth link. */
+    var onAclDisconnected: ((String) -> Unit)? = null
+
+    private val _aclConnected = mutableSetOf<String>()
+
+    override fun isAclConnected(address: String): Boolean = address in _aclConnected
+
     init {
         appContext.registerReceiver(
             bluetoothStateReceiver,
             IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED),
         )
+        val aclFilter = IntentFilter().apply {
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        }
+        appContext.registerReceiver(aclStateReceiver, aclFilter)
         _enabled.value = isBluetoothEnabled()
     }
 
@@ -91,19 +132,17 @@ class AndroidBluetoothTransport(
 
     @SuppressLint("MissingPermission")
     override fun refresh() {
-        if (needsPermission) {
-            _devices.value = emptyList()
-            return
+        scope.launch {
+            val found = withContext(Dispatchers.IO) { queryDevices() }
+            _devices.value = found
         }
-        val adapter = BluetoothAdapter.getDefaultAdapter() ?: run {
-            _devices.value = emptyList()
-            return
-        }
-        if (!adapter.isEnabled) {
-            _devices.value = emptyList()
-            return
-        }
-        val found = adapter.bondedDevices
+    }
+
+    private fun queryDevices(): List<SeDevice> {
+        if (needsPermission) return emptyList()
+        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
+        if (!adapter.isEnabled) return emptyList()
+        return adapter.bondedDevices
             .filter { it.type != BluetoothDevice.DEVICE_TYPE_LE }
             .mapNotNull { device ->
                 if (!isLikelyFreeBudsSe(device.name)) return@mapNotNull null
@@ -113,7 +152,6 @@ class AndroidBluetoothTransport(
                 )
             }
             .sortedBy { it.name }
-        _devices.value = found
     }
 
     override fun connect(device: SeDevice) {
@@ -139,21 +177,30 @@ class AndroidBluetoothTransport(
         android.util.Log.d("FreeBudsSE", "disconnect() called")
         recvJob?.cancel()
         recvJob = null
-        try {
-            socket?.close()
-        } catch (_: Exception) {
-        }
+        val sock = socket
         socket = null
         _state.value = ConnectionState.Disconnected(null)
+        if (sock != null) {
+            scope.launch(Dispatchers.IO) {
+                try {
+                    sock.close()
+                } catch (_: Exception) {
+                }
+            }
+        }
     }
 
     override fun send(bytes: ByteArray) {
         val sock = socket ?: return
-        try {
-            sock.outputStream.write(bytes)
-            sock.outputStream.flush()
-        } catch (_: Exception) {
-            disconnect()
+        scope.launch(Dispatchers.IO) {
+            writeMutex.withLock {
+                try {
+                    sock.outputStream.write(bytes)
+                    sock.outputStream.flush()
+                } catch (_: Exception) {
+                    disconnect()
+                }
+            }
         }
     }
 
@@ -161,6 +208,10 @@ class AndroidBluetoothTransport(
         disconnect()
         try {
             appContext.unregisterReceiver(bluetoothStateReceiver)
+        } catch (_: Exception) {
+        }
+        try {
+            appContext.unregisterReceiver(aclStateReceiver)
         } catch (_: Exception) {
         }
     }
@@ -185,6 +236,7 @@ class AndroidBluetoothTransport(
         }
 
         socket = sock
+        _aclConnected.add(device.address)
         _state.value = ConnectionState.Connected(device)
         android.util.Log.d("FreeBudsSE", "openConnection: Connected OK")
         recvJob = scope.launch {

@@ -52,6 +52,12 @@ class MainActivity : ComponentActivity() {
 
         transport = AndroidBluetoothTransport(applicationContext, scope)
         transport.permissionLauncher = permissionLauncher
+        transport.onAclConnected = { address ->
+            controller.onAclDeviceConnected(address)
+        }
+        transport.onAclDisconnected = { address ->
+            controller.onAclDeviceDisconnected(address)
+        }
         controller = SeController(transport, transport, scope)
         controller.onBatteryChanged = { levels ->
             BatteryWidgetProvider.saveAndUpdate(applicationContext, levels)
@@ -111,7 +117,7 @@ class MainActivity : ComponentActivity() {
                 controller.refreshDevices()
                 val devices = transport.devices.value
                 if (devices.isNotEmpty()) {
-                    controller.connect(devices.first())
+                    controller.connectSilent(devices.first())
                     return@launch
                 }
                 delay(700)

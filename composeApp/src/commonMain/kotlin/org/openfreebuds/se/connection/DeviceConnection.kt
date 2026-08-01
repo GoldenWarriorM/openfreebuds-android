@@ -24,6 +24,14 @@ interface DeviceConnection {
     fun disconnect()
     fun send(bytes: ByteArray)
     fun close()
+
+    /**
+     * Whether the given device is currently linked at the Bluetooth ACL layer
+     * (i.e. physically connected to the phone). Used to avoid pointless SPP
+     * reconnect attempts while the device is out of range. Defaults to true so
+     * platforms without ACL awareness keep retrying.
+     */
+    fun isAclConnected(address: String): Boolean = true
 }
 
 /** Platform-specific device discovery. */

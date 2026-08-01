@@ -8,6 +8,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import org.openfreebuds.se.android.BatteryNotification
+import org.openfreebuds.se.android.BatteryStatusService
 import org.openfreebuds.se.model.BatteryLevels
 
 internal var appContext: Context? = null
@@ -31,9 +32,9 @@ internal actual fun platformBatteryNotificationSupported(): Boolean = true
 internal actual fun platformSetBatteryNotificationEnabled(enabled: Boolean) {
     val context = appContext ?: return
     if (enabled) {
-        BatteryNotification.show(context, BatteryLevels.Unknown)
+        BatteryStatusService.start(context)
     } else {
-        BatteryNotification.hide(context)
+        BatteryStatusService.stop(context)
     }
 }
 

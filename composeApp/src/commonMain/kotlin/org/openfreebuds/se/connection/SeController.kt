@@ -51,7 +51,9 @@ class SeController(
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
     private val connectionState: StateFlow<ConnectionState> = connection.state
-    val state: StateFlow<ConnectionState> = connectionState
+
+    private val _uiState = MutableStateFlow<ConnectionState>(ConnectionState.Idle)
+    val state: StateFlow<ConnectionState> = _uiState.asStateFlow()
 
     val devices: StateFlow<List<SeDevice>> = provider.devices
     val bluetoothEnabled: StateFlow<Boolean?> = provider.bluetoothEnabled
@@ -63,9 +65,8 @@ class SeController(
     private var watchdogJob: Job? = null
     private var reconnectJob: Job? = null
     private var lastDevice: SeDevice? = null
-    private var reconnectAttempts = 0
     private var userDisconnected = false
-    private var connectedSince = 0L
+    private var manualConnect = false
     private val _reconnecting = MutableStateFlow(false)
     val reconnecting: StateFlow<Boolean> = _reconnecting.asStateFlow()
 
@@ -77,16 +78,17 @@ class SeController(
         }
 
         scope.launch {
-            connectionState.collect { state ->
-                when (state) {
+            connectionState.collect { rawState ->
+                when (rawState) {
                     is ConnectionState.Connected -> {
-                        connectedSince = System.currentTimeMillis()
                         _reconnecting.value = false
                         reconnectJob?.cancel()
                         reconnectJob = null
-                        lastDevice = state.device
-                        _activeDevice.value = state.device
+                        manualConnect = false
+                        lastDevice = rawState.device
+                        _activeDevice.value = rawState.device
                         _lastError.value = null
+                        _uiState.value = rawState
                         requestInit()
                         startWatchdog()
                     }
@@ -97,11 +99,23 @@ class SeController(
                         onConnectionLost()
                     }
                     is ConnectionState.Error -> {
-                        _lastError.value = state.message
                         _activeDevice.value = null
+                        if (manualConnect) {
+                            _lastError.value = rawState.message
+                            _uiState.value = rawState
+                            manualConnect = false
+                        } else {
+                            _lastError.value = null
+                            _uiState.value = ConnectionState.Disconnected(null)
+                        }
                         onConnectionLost()
                     }
-                    else -> Unit
+                    is ConnectionState.Connecting -> {
+                        _uiState.value = rawState
+                    }
+                    else -> {
+                        _uiState.value = rawState
+                    }
                 }
             }
         }
@@ -111,9 +125,23 @@ class SeController(
 
     fun connect(device: SeDevice) {
         userDisconnected = false
+        manualConnect = true
         reconnectJob?.cancel()
         reconnectJob = null
         _reconnecting.value = false
+        _lastError.value = null
+        watchdogJob?.cancel()
+        connection.connect(device)
+    }
+
+    /** Connects without surfacing errors to the UI (used by automatic startup connect). */
+    fun connectSilent(device: SeDevice) {
+        userDisconnected = false
+        manualConnect = false
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnecting.value = false
+        _lastError.value = null
         watchdogJob?.cancel()
         connection.connect(device)
     }
@@ -128,23 +156,38 @@ class SeController(
     }
 
     private fun onConnectionLost() {
-        val now = System.currentTimeMillis()
-        val wasStable = connectedSince != 0L && now - connectedSince >= STABLE_WINDOW_MS
-        connectedSince = 0L
-        if (wasStable) reconnectAttempts = 0
         if (userDisconnected || lastDevice == null) return
-        _reconnecting.value = reconnectAttempts < MAX_RECONNECTS
-        scheduleReconnect()
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnecting.value = false
+        _uiState.value = ConnectionState.Disconnected(lastDevice)
     }
 
-    /** Reconnects automatically after an unexpected drop, up to a few tries. */
-    private fun scheduleReconnect() {
-        if (userDisconnected || lastDevice == null || reconnectAttempts >= MAX_RECONNECTS) return
+    /**
+     * Called when the earbuds became physically connected to the phone
+     * (ACTION_ACL_CONNECTED). Starts a silent SPP connection right away.
+     */
+    fun onAclDeviceConnected(address: String) {
+        val device = lastDevice?.takeIf { it.address == address } ?: return
+        if (userDisconnected) return
+        val current = _uiState.value
+        if (current is ConnectionState.Connected || current is ConnectionState.Connecting) return
         reconnectJob?.cancel()
-        reconnectJob = scope.launch {
-            delay(3000)
-            reconnectAttempts++
-            connection.connect(lastDevice!!)
+        reconnectJob = null
+        _reconnecting.value = false
+        connectSilent(device)
+    }
+
+    /** Called when the earbuds dropped the physical link (ACTION_ACL_DISCONNECTED). */
+    fun onAclDeviceDisconnected(address: String) {
+        val device = lastDevice?.takeIf { it.address == address } ?: return
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnecting.value = false
+        if (_uiState.value is ConnectionState.Connected) {
+            connection.disconnect()
+        } else {
+            _uiState.value = ConnectionState.Disconnected(device)
         }
     }
 
@@ -182,19 +225,26 @@ class SeController(
         connection.send(SeCommands.doubleTapRead().toBytes())
     }
 
-    /** Re-queries missing data every few seconds, like FreeBuddy does. */
+    /**
+     * Periodically re-queries the battery level (keeps the widget and the
+     * permanent notification fresh), and fills in any missing device info or
+     * gesture config. Like FreeBuddy does.
+     */
     private fun startWatchdog() {
         watchdogJob?.cancel()
         watchdogJob = scope.launch {
+            var lastBatteryQuery = 0L
             while (isActive) {
-                delay(3000)
-                val hasBattery = _battery.value.isKnown
+                delay(BATTERY_POLL_INTERVAL_MS)
                 val hasInfo = _deviceInfo.value != null
                 val hasDoubleTap = _doubleTap.value != null
-                if (!hasBattery) connection.send(SeCommands.batteryRead().toBytes())
                 if (!hasInfo) connection.send(SeCommands.infoRead().toBytes())
                 if (!hasDoubleTap) connection.send(SeCommands.doubleTapRead().toBytes())
-                if (hasBattery && hasInfo && hasDoubleTap) break
+                val now = System.currentTimeMillis()
+                if (now - lastBatteryQuery >= BATTERY_POLL_INTERVAL_MS) {
+                    connection.send(SeCommands.batteryRead().toBytes())
+                    lastBatteryQuery = now
+                }
             }
         }
     }
@@ -223,7 +273,6 @@ class SeController(
     }
 
     companion object {
-        private const val MAX_RECONNECTS = 3
-        private const val STABLE_WINDOW_MS = 15_000L
+        private const val BATTERY_POLL_INTERVAL_MS = 30_000L
     }
 }

@@ -79,20 +79,6 @@ fun HomeScreen(controller: SeController) {
             reconnecting = reconnecting,
         )
 
-        if (connecting) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(22.dp),
-                        strokeWidth = 3.dp,
-                    )
-                    Text("Connecting…", style = MaterialTheme.typography.bodyLarge)
-                }
-            }
-
             if (bluetoothEnabled == false && !connected) {
                 BluetoothOffCard(onPermission = { controller.requestPermission { } })
             }
@@ -145,6 +131,7 @@ private fun ConnectionHeader(
     reconnecting: Boolean,
 ) {
     val connected = state is ConnectionState.Connected
+    val connecting = state is ConnectionState.Connecting
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
         color = if (connected) {
@@ -158,25 +145,32 @@ private fun ConnectionHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(20.dp),
         ) {
-            Icon(
-                imageVector = if (connected) Icons.Filled.CheckCircle
-                else if (batteryKnown) Icons.Filled.Bolt
-                else Icons.Filled.BluetoothDisabled,
-                contentDescription = null,
-                modifier = Modifier.size(36.dp),
-                tint = if (connected) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-            )
+            if (connecting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(36.dp),
+                    strokeWidth = 3.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                Icon(
+                    imageVector = if (connected) Icons.Filled.CheckCircle
+                    else if (batteryKnown) Icons.Filled.Bolt
+                    else Icons.Filled.BluetoothDisabled,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = if (connected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
             Spacer(Modifier.width(16.dp))
             Column {
                 Text(
                     text = when {
                         connected -> "Connected"
                         reconnecting -> "Reconnecting…"
-                        state is ConnectionState.Connecting -> "Connecting"
                         state is ConnectionState.Error -> "Connection error"
                         else -> "Not connected"
                     },

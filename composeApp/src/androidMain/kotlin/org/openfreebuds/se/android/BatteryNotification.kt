@@ -21,8 +21,17 @@ object BatteryNotification {
     const val CHANNEL_ID = "battery_status"
     const val NOTIFICATION_ID = 2
 
-    private var lastLevels: BatteryLevels = BatteryLevels.Unknown
+    var lastLevels: BatteryLevels = BatteryLevels.Unknown
+        private set
     private var visible = false
+
+    val currentLevels: BatteryLevels get() = lastLevels
+
+    /** Marks the notification as active (called when the foreground service starts). */
+    fun markActive(context: Context) {
+        ensureChannel(context)
+        visible = true
+    }
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -66,7 +75,7 @@ object BatteryNotification {
         manager.cancel(NOTIFICATION_ID)
     }
 
-    private fun build(context: Context, battery: BatteryLevels): Notification {
+    fun build(context: Context, battery: BatteryLevels): Notification {
         val content = buildList {
             add("Left: ${format(battery.left)}")
             add("Right: ${format(battery.right)}")
