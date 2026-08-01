@@ -22,7 +22,8 @@
 ## Screenshots
 
 <p float="left">
-  <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/home.webp" alt="Home screen" width="30%" />
+  <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/home.png" alt="Home screen" width="30%" />
+  <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/widget.png" alt="Home-screen widget" width="30%" />
 </p>
 
 ## Platforms
