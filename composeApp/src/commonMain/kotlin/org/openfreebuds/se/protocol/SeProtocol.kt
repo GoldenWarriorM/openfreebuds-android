@@ -49,10 +49,15 @@ object SeCommands {
             params[2] = byteArrayOf()
         }
 
-    fun doubleTapWrite(left: TapAction, right: TapAction): MbbPackage =
+    /** Parameter id for the left earbud in double tap packages. */
+    const val DUAL_TAP_LEFT_PARAM = 1
+
+    /** Parameter id for the right earbud in double tap packages. */
+    const val DUAL_TAP_RIGHT_PARAM = 2
+
+    fun doubleTapWrite(side: Int, action: TapAction): MbbPackage =
         MbbPackage(DUAL_TAP_WRITE_SERVICE, DUAL_TAP_WRITE_COMMAND).apply {
-            params[1] = byteArrayOf(left.code.toByte())
-            params[2] = byteArrayOf(right.code.toByte())
+            params[side] = byteArrayOf(action.code.toByte())
         }
 
     /** Parses a battery package (either 1:8 or 1:39 response). */

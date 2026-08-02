@@ -195,7 +195,8 @@ class SeController(
         provider.requestPermission(onResult)
 
     fun setDoubleTap(left: TapAction, right: TapAction) {
-        connection.send(SeCommands.doubleTapWrite(left, right).toBytes())
+        connection.send(SeCommands.doubleTapWrite(SeCommands.DUAL_TAP_LEFT_PARAM, left).toBytes())
+        connection.send(SeCommands.doubleTapWrite(SeCommands.DUAL_TAP_RIGHT_PARAM, right).toBytes())
         connection.send(SeCommands.doubleTapRead().toBytes())
     }
 
