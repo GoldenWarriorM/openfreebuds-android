@@ -18,6 +18,10 @@
 - **Permanent notification** — optional ongoing notification with the battery level of both earbuds and the case (pinned to the top of the shade)
 - **Automatic reconnect** — reconnects to the last known device after an unexpected drop
 - **Material 3 Expressive** — dynamic Material You theming on Android
+- Doesn't require internet connection (AI Life require plugin to work)
+- Only takes 32 MB of space (AI Life takes 660 MB of space)
+- No proprietary BS like EULA or Privacy Policy
+
 
 ## Screenshots
 
