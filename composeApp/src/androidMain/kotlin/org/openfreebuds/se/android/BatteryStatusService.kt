@@ -22,8 +22,11 @@ import org.openfreebuds.se.connection.ConnectionState
  * periodic battery polls keep the notification and the home-screen widget
  * fresh in the background, independently of the activity lifecycle.
  *
- * The battery notification is shown only while the earbuds are connected and
- * is hidden whenever the link is lost.
+ * The service stays in the foreground at all times while it is running, so the
+ * system does not kill it. The notification content reflects the connection
+ * state: battery levels while connected, "Not connected" otherwise. The user
+ * can hide the notification via the system settings (channel), like with any
+ * other keep-alive notification.
  */
 class BatteryStatusService : Service() {
 
@@ -38,22 +41,24 @@ class BatteryStatusService : Service() {
         val controller = SeEngine.controller
         stateJob = serviceScope.launch {
             controller.state.collect { state ->
-                when (state) {
-                    is ConnectionState.Connected -> showBatteryNotification()
-                    else -> hideBatteryNotification()
+                val connected = state is ConnectionState.Connected
+                BatteryNotification.connected = connected
+                if (connected) {
+                    BatteryNotification.show(
+                        this@BatteryStatusService,
+                        controller.battery.value,
+                    )
+                } else {
+                    BatteryNotification.hideBattery(this@BatteryStatusService)
                 }
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val controller = SeEngine.controller
         // Always start as foreground promptly on Android 8+; onStartCommand must
         // call startForeground quickly or the system throws.
-        showBatteryNotification()
-        if (controller.state.value !is ConnectionState.Connected) {
-            hideBatteryNotification()
-        }
+        updateNotification()
         return START_STICKY
     }
 
@@ -64,22 +69,20 @@ class BatteryStatusService : Service() {
         super.onDestroy()
     }
 
-    private fun showBatteryNotification() {
-        val controller = SeEngine.controller
+    private fun updateNotification() {
         BatteryNotification.markActive(this)
-        startForegroundCompat(
-            BatteryNotification.NOTIFICATION_ID,
-            BatteryNotification.build(this, controller.battery.value),
-        )
-    }
-
-    private fun hideBatteryNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(ServiceCompat.STOP_FOREGROUND_REMOVE)
+        val controller = SeEngine.controller
+        val connected = controller.state.value is ConnectionState.Connected
+        BatteryNotification.connected = connected
+        if (connected) {
+            BatteryNotification.show(this, controller.battery.value)
         } else {
-            stopForeground(true)
+            BatteryNotification.hideBattery(this)
         }
-        BatteryNotification.hide(this)
+        startForegroundCompat(
+            BatteryNotification.SERVICE_ID,
+            BatteryNotification.serviceNotification(this),
+        )
     }
 
     private fun startForegroundCompat(id: Int, notification: Notification) {

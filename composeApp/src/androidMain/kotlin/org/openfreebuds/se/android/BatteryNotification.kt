@@ -18,48 +18,72 @@ import org.openfreebuds.se.model.BatteryLevels
  */
 object BatteryNotification {
 
-    const val CHANNEL_ID = "battery_status"
-    const val NOTIFICATION_ID = 2
+    const val SERVICE_CHANNEL_ID = "service_status"
+    const val BATTERY_CHANNEL_ID = "battery_status"
+    const val SERVICE_ID = 2
+    const val BATTERY_ID = 4
+    const val SERVICE_NAME = "FreeBuds SE Service"
+    const val SERVICE_TEXT =
+        "FreeBuds SE is running in the background\nTo hide this, hold and tap \"Turn off\""
 
     var lastLevels: BatteryLevels = BatteryLevels.Unknown
         private set
-    private var visible = false
+    var connected: Boolean = true
+    private var serviceVisible = false
+    private var batteryVisible = false
 
     val currentLevels: BatteryLevels get() = lastLevels
 
-    /** Marks the notification as active (called when the foreground service starts). */
+    /** Shows the persistent keep-alive foreground-service notification. */
     fun markActive(context: Context) {
         ensureChannel(context)
-        visible = true
+        serviceVisible = true
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(SERVICE_ID, buildService(context))
+    }
+
+    fun hideBattery(context: Context) {
+        batteryVisible = false
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.cancel(BATTERY_ID)
     }
 
     fun ensureChannel(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            CHANNEL_ID,
+        val serviceChannel = NotificationChannel(
+            SERVICE_CHANNEL_ID,
+            SERVICE_NAME,
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = SERVICE_TEXT
+            setShowBadge(false)
+        }
+        val batteryChannel = NotificationChannel(
+            BATTERY_CHANNEL_ID,
             "Battery status",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
             description = "Current battery level of the earbuds and case"
             setShowBadge(false)
         }
-        manager.createNotificationChannel(channel)
+        manager.createNotificationChannel(serviceChannel)
+        manager.createNotificationChannel(batteryChannel)
     }
 
     fun show(context: Context, battery: BatteryLevels) {
         if (!canPost(context)) return
         ensureChannel(context)
         lastLevels = battery
-        visible = true
+        batteryVisible = true
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, build(context, battery))
+        manager.notify(BATTERY_ID, build(context, battery))
     }
 
     fun update(context: Context, battery: BatteryLevels) {
-        if (!visible || !canPost(context)) return
+        if (!batteryVisible || !canPost(context)) return
         lastLevels = battery
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, build(context, battery))
+        manager.notify(BATTERY_ID, build(context, battery))
     }
 
     fun canPost(context: Context): Boolean =
@@ -70,9 +94,38 @@ object BatteryNotification {
             ) == PackageManager.PERMISSION_GRANTED
 
     fun hide(context: Context) {
-        visible = false
+        serviceVisible = false
+        batteryVisible = false
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.cancel(NOTIFICATION_ID)
+        manager.cancel(SERVICE_ID)
+        manager.cancel(BATTERY_ID)
+    }
+
+    /** The permanent foreground-service keep-alive notification. */
+    fun serviceNotification(context: Context): Notification = buildService(context)
+
+    private fun buildService(context: Context): Notification {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return Notification.Builder(context, SERVICE_CHANNEL_ID)
+            .setContentTitle(SERVICE_NAME)
+            .setContentText(SERVICE_TEXT)
+            .setStyle(Notification.BigTextStyle().bigText(SERVICE_TEXT))
+            .setSmallIcon(R.drawable.ic_case)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(pendingIntent)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .setShowWhen(false)
+            .setWhen(0L)
+            .build()
     }
 
     fun build(context: Context, battery: BatteryLevels): Notification {
@@ -92,7 +145,7 @@ object BatteryNotification {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        return Notification.Builder(context, CHANNEL_ID)
+        return Notification.Builder(context, BATTERY_CHANNEL_ID)
             .setContentTitle("FreeBuds SE")
             .setContentText(content)
             .setSmallIcon(R.drawable.ic_case)
