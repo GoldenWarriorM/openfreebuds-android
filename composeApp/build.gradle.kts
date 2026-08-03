@@ -66,8 +66,8 @@ android {
         applicationId = "org.openfreebuds.se"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "1.0.1"
+        versionCode = 4
+        versionName = "1.0.2"
     }
 
     buildTypes {
@@ -101,7 +101,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Deb, TargetFormat.AppImage)
             packageName = "openfreebuds-se"
-            packageVersion = "1.0.1"
+            packageVersion = "1.0.2"
         }
     }
 }
