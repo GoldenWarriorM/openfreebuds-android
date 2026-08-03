@@ -18,12 +18,10 @@ import org.openfreebuds.se.connection.ConnectionState
 import org.openfreebuds.se.connection.SeController
 import org.openfreebuds.se.ui.App
 import org.openfreebuds.se.ui.initPlatform
-import org.openfreebuds.se.ui.updateBatteryNotification
 
 class MainActivity : ComponentActivity() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private lateinit var transport: AndroidBluetoothTransport
     private lateinit var controller: SeController
     private val prefs: SharedPreferences by lazy {
         getSharedPreferences("settings", MODE_PRIVATE)
@@ -32,7 +30,7 @@ class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
-        transport.onPermissionResult(granted)
+        SeEngine.platformTransport?.onPermissionResult(granted)
         if (granted) refreshAndMaybeConnect()
     }
 
@@ -50,19 +48,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         initPlatform(applicationContext)
 
-        transport = AndroidBluetoothTransport(applicationContext, scope)
-        transport.permissionLauncher = permissionLauncher
-        transport.onAclConnected = { address ->
-            controller.onAclDeviceConnected(address)
-        }
-        transport.onAclDisconnected = { address ->
-            controller.onAclDeviceDisconnected(address)
-        }
-        controller = SeController(transport, transport, scope)
-        controller.onBatteryChanged = { levels ->
-            BatteryWidgetProvider.saveAndUpdate(applicationContext, levels)
-            updateBatteryNotification(levels)
-        }
+        controller = SeEngine.ensureStarted(applicationContext)
+        SeEngine.platformTransport?.permissionLauncher = permissionLauncher
 
         if (prefs.getBoolean("notification_enabled", false)) {
             controller.setNotificationsEnabled(true)
@@ -83,17 +70,8 @@ class MainActivity : ComponentActivity() {
         }
 
         scope.launch {
-            while (true) {
-                delay(30_000)
-                if (controller.notificationsEnabled.value) {
-                    updateBatteryNotification(controller.battery.value)
-                }
-            }
-        }
-
-        scope.launch {
-            if (transport.needsPermission) {
-                transport.requestPermission { granted ->
+            if (SeEngine.platformTransport?.needsPermission == true) {
+                SeEngine.platformTransport?.requestPermission { granted ->
                     if (granted) refreshAndMaybeConnect()
                 }
             } else {
@@ -115,7 +93,7 @@ class MainActivity : ComponentActivity() {
                 controller.state.value !is ConnectionState.Connecting
             ) {
                 controller.refreshDevices()
-                val devices = transport.devices.value
+                val devices = SeEngine.platformTransport?.devices?.value.orEmpty()
                 if (devices.isNotEmpty()) {
                     controller.connectSilent(devices.first())
                     return@launch
@@ -127,7 +105,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        controller.close()
         scope.cancel()
         super.onDestroy()
     }
