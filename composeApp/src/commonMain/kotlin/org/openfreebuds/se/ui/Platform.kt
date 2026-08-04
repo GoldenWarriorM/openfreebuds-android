@@ -2,6 +2,7 @@ package org.openfreebuds.se.ui
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import org.openfreebuds.se.model.BatteryLevels
 
 /**
@@ -10,6 +11,10 @@ import org.openfreebuds.se.model.BatteryLevels
  */
 @Composable
 expect fun platformColorScheme(isDark: Boolean): ColorScheme
+
+/** Returns a system accent1 tone (Material You), matching the home widget palette. */
+@Composable
+expect fun platformAccentTone(tone: Int): Color
 
 /** Whether the platform can show an ongoing battery notification. */
 fun batteryNotificationSupported(): Boolean = platformBatteryNotificationSupported()

@@ -2,16 +2,19 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@android:id/background">
         <shape>
-            <corners android:radius="16dp" />
+            <corners android:radius="18dp" />
             <solid android:color="@color/fb_bar_background" />
         </shape>
     </item>
     <item android:id="@android:id/progress">
-        <clip>
+        <scale
+            android:scaleGravity="left"
+            android:scaleHeight="0%"
+            android:scaleWidth="100%">
             <shape>
-                <corners android:radius="16dp" />
+                <corners android:radius="18dp" />
                 <solid android:color="@color/fb_bar_color" />
             </shape>
-        </clip>
+        </scale>
     </item>
 </layer-list>
