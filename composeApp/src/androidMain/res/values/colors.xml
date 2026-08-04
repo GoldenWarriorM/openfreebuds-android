@@ -4,4 +4,9 @@
     <color name="widget_on_surface">#191C1B</color>
     <color name="widget_surface">#FAFDFB</color>
     <color name="widget_track">#22006A60</color>
+
+    <color name="fb_text_color">#003549</color>
+    <color name="fb_bar_color">#76D1FF</color>
+    <color name="fb_bar_background">#C1E8FF</color>
+    <color name="fb_track_neutral">#1A000000</color>
 </resources>
