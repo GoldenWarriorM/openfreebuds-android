@@ -99,7 +99,7 @@ private data class GreyStyle(
 @Composable
 private fun offlineGreyStyle(): GreyStyle = GreyStyle(
     track = MaterialTheme.colorScheme.surfaceVariant,
-    fill = MaterialTheme.colorScheme.onSurfaceVariant,
+    fill = MaterialTheme.colorScheme.outline,
     content = MaterialTheme.colorScheme.onSurface,
 )
 
