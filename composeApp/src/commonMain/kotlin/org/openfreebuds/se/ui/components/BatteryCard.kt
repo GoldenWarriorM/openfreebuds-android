@@ -1,5 +1,6 @@
 package org.openfreebuds.se.ui.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -23,14 +24,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,29 +51,67 @@ fun BatteryCard(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        val greyStyle = if (isSystemInDarkTheme()) {
+            OfflineGreyDark
+        } else {
+            OfflineGreyLight
+        }
+        val bothMissing = battery.missingLeft && battery.missingRight
+        val forceGrey = !connected
         BatteryPill(
             icon = BudIcons.LeftEarbud,
             label = "Left bud",
             level = battery.left,
             charging = battery.chargingLeft,
-            connected = connected,
+            missing = battery.missingLeft,
+            bothMissing = bothMissing,
+            forceGrey = forceGrey,
+            greyStyle = greyStyle,
         )
         BatteryPill(
             icon = BudIcons.RightEarbud,
             label = "Right bud",
             level = battery.right,
             charging = battery.chargingRight,
-            connected = connected,
+            missing = battery.missingRight,
+            bothMissing = bothMissing,
+            forceGrey = forceGrey,
+            greyStyle = greyStyle,
         )
         BatteryPill(
             icon = BudIcons.Case,
             label = "Case",
             level = battery.case,
             charging = battery.chargingCase,
-            connected = connected,
+            missing = battery.missingCase,
+            bothMissing = bothMissing,
+            forceGrey = forceGrey,
+            greyStyle = greyStyle,
         )
     }
 }
+
+/**
+ * Offline pill palette: a neutral grey family for both the track (background)
+ * and the fill, fixed so the fill stays clearly visible on any dynamic scheme.
+ */
+private data class GreyStyle(
+    val track: Color,
+    val fill: Color,
+    val content: Color,
+)
+
+private val OfflineGreyDark = GreyStyle(
+    track = Color(0xFF34343A),
+    fill = Color(0xFF6F6F78),
+    content = Color(0xFFDCDCE0),
+)
+
+private val OfflineGreyLight = GreyStyle(
+    track = Color(0xFF9C9CA4),
+    fill = Color(0xFFE9E9ED),
+    content = Color(0xFF38383D),
+)
 
 @Composable
 private fun BatteryPill(
@@ -84,28 +119,46 @@ private fun BatteryPill(
     label: String,
     level: Int?,
     charging: Boolean,
-    connected: Boolean,
+    missing: Boolean,
+    bothMissing: Boolean,
+    forceGrey: Boolean,
+    greyStyle: GreyStyle,
 ) {
-    val available = connected && level != null
     val shape = RoundedCornerShape(18.dp)
 
+    // An offline earbud keeps its (last known) fill but in a grey palette, and
+    // its background is grey too. When neither bud is present the pills stay in
+    // the adaptive accent tones, unless the whole connection is gone ([forceGrey]).
+    val offline = forceGrey || level == null || (missing && !bothMissing)
+
     val dark = isSystemInDarkTheme()
-    val fillColor = when {
-        level == null -> MaterialTheme.colorScheme.outline
-        !available -> MaterialTheme.colorScheme.onSurfaceVariant
-        level <= 20 -> MaterialTheme.colorScheme.errorContainer
-        else -> platformAccentTone(if (dark) 700 else 100)
-    }
-    val trackColor = if (available) {
-        platformAccentTone(if (dark) 800 else 200)
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
-    val contentColor = if (available) {
-        platformAccentTone(if (dark) 100 else 800)
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val fillColor = animateColorAsState(
+        targetValue = when {
+            offline -> greyStyle.fill
+            level != null && level <= 20 -> MaterialTheme.colorScheme.errorContainer
+            else -> platformAccentTone(if (dark) 700 else 100)
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "pillFillColor",
+    ).value
+    val trackColor = animateColorAsState(
+        targetValue = if (offline) {
+            greyStyle.track
+        } else {
+            platformAccentTone(if (dark) 800 else 200)
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "pillTrackColor",
+    ).value
+    val contentColor = animateColorAsState(
+        targetValue = if (offline) {
+            greyStyle.content
+        } else {
+            platformAccentTone(if (dark) 100 else 800)
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "pillContentColor",
+    ).value
 
     val fraction = animateFloatAsState(
         targetValue = if (level != null) (level / 100f).coerceIn(0f, 1f) else 0f,
@@ -142,8 +195,7 @@ private fun BatteryPill(
                 imageVector = icon,
                 contentDescription = label,
                 modifier = Modifier.size(22.dp),
-                tint = if (available) contentColor
-                else MaterialTheme.colorScheme.outline,
+                tint = contentColor,
             )
             Spacer(Modifier.width(12.dp))
             Text(
@@ -152,7 +204,7 @@ private fun BatteryPill(
                 color = contentColor,
                 modifier = Modifier.weight(1f),
             )
-            if (charging && available) {
+            if (charging && level != null) {
                 Icon(
                     imageVector = Icons.Filled.Bolt,
                     contentDescription = "Charging",

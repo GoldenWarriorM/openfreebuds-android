@@ -11,9 +11,32 @@ data class BatteryLevels(
     val chargingLeft: Boolean = false,
     val chargingRight: Boolean = false,
     val chargingCase: Boolean = false,
+    /** True when this reading could not provide the value for the given side. */
+    val missingLeft: Boolean = false,
+    val missingRight: Boolean = false,
+    val missingCase: Boolean = false,
 ) {
     val lowest: Int? get() = listOfNotNull(left, right).minOrNull()
     val isKnown: Boolean get() = left != null || right != null || case != null
+
+    /**
+     * Returns a copy where levels that this reading could not provide (null,
+     * e.g. an earbud dropped out of the case / the connection) are filled from
+     * the last known values of [last], together with the matching charging
+     * state. So a temporarily lost earbud keeps showing its last battery level
+     * and charging status.
+     */
+    fun withLastKnownFallback(last: BatteryLevels): BatteryLevels = BatteryLevels(
+        left = left ?: last.left,
+        right = right ?: last.right,
+        case = case ?: last.case,
+        chargingLeft = if (left != null) chargingLeft else last.chargingLeft,
+        chargingRight = if (right != null) chargingRight else last.chargingRight,
+        chargingCase = if (case != null) chargingCase else last.chargingCase,
+        missingLeft = left == null,
+        missingRight = right == null,
+        missingCase = case == null,
+    )
 
     companion object {
         val Unknown = BatteryLevels()

@@ -206,7 +206,8 @@ class SeController(
             SeCommands.BATTERY_READ_SERVICE to SeCommands.BATTERY_READ_COMMAND,
             SeCommands.BATTERY_NOTIFY_SERVICE to SeCommands.BATTERY_NOTIFY_COMMAND,
             -> {
-                _battery.value = SeCommands.parseBattery(pkg)
+                val parsed = SeCommands.parseBattery(pkg)
+                _battery.value = parsed.withLastKnownFallback(_battery.value)
                 onBatteryChanged?.invoke(_battery.value)
             }
             SeCommands.INFO_SERVICE to SeCommands.INFO_COMMAND -> {
@@ -258,7 +259,7 @@ class SeController(
     }
 
     fun updateBatteryManually(levels: BatteryLevels) {
-        _battery.update { levels }
+        _battery.update { levels.withLastKnownFallback(it) }
     }
 
     /** Enables or disables the persistent battery notification, if supported. */

@@ -4,6 +4,7 @@
     <string name="widget_title">FreeBuds SE</string>
     <string name="widget_description">FreeBuds SE battery levels</string>
     <string name="widget_row_icon">earbud icon</string>
+    <string name="widget_row_charging">charging</string>
     <string name="widget_row_left">Left</string>
     <string name="widget_row_right">Right</string>
     <string name="widget_row_case">Case</string>

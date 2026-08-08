@@ -1,5 +1,7 @@
 package org.openfreebuds.se.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -133,13 +135,36 @@ private fun ConnectionHeader(
 ) {
     val connected = state is ConnectionState.Connected
     val connecting = state is ConnectionState.Connecting
-    Surface(
-        shape = RoundedCornerShape(36.dp),
-        color = if (connected) {
+    val headerBg = animateColorAsState(
+        targetValue = if (connected) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
             MaterialTheme.colorScheme.surfaceVariant
         },
+        animationSpec = tween(durationMillis = 600),
+        label = "connectionHeaderBg",
+    ).value
+    val iconColor = animateColorAsState(
+        targetValue = if (connected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "connectionHeaderIcon",
+    ).value
+    val headerText = animateColorAsState(
+        targetValue = if (connected) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "connectionHeaderText",
+    ).value
+    Surface(
+        shape = RoundedCornerShape(36.dp),
+        color = headerBg,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -159,11 +184,7 @@ private fun ConnectionHeader(
                     else Icons.Filled.BluetoothDisabled,
                     contentDescription = null,
                     modifier = Modifier.size(36.dp),
-                    tint = if (connected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                    tint = iconColor,
                 )
             }
             Spacer(Modifier.width(16.dp))
@@ -177,11 +198,7 @@ private fun ConnectionHeader(
                     },
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (connected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    color = headerText,
                 )
             }
         }

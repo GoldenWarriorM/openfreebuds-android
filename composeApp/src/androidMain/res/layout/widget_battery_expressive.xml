@@ -45,11 +45,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:fontFamily="sans-serif"
                 android:text="@string/widget_row_left"
                 android:textColor="@color/fb_text_color"
-                android:textSize="13sp" />
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/fb_left_charging"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/widget_row_charging"
+                android:src="@drawable/ic_bolt"
+                android:visibility="gone"
+                android:importantForAccessibility="no" />
 
             <TextView
                 android:id="@+id/fb_left_percent"
@@ -99,11 +115,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:fontFamily="sans-serif"
                 android:text="@string/widget_row_right"
                 android:textColor="@color/fb_text_color"
-                android:textSize="13sp" />
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/fb_right_charging"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/widget_row_charging"
+                android:src="@drawable/ic_bolt"
+                android:visibility="gone"
+                android:importantForAccessibility="no" />
 
             <TextView
                 android:id="@+id/fb_right_percent"
@@ -152,11 +184,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:fontFamily="sans-serif"
                 android:text="@string/widget_row_case"
                 android:textColor="@color/fb_text_color"
-                android:textSize="13sp" />
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/fb_case_charging"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginStart="8dp"
+                android:contentDescription="@string/widget_row_charging"
+                android:src="@drawable/ic_bolt"
+                android:visibility="gone"
+                android:importantForAccessibility="no" />
 
             <TextView
                 android:id="@+id/fb_case_percent"
