@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -97,11 +98,18 @@ private data class GreyStyle(
 )
 
 @Composable
-private fun offlineGreyStyle(): GreyStyle = GreyStyle(
-    track = MaterialTheme.colorScheme.surfaceVariant,
-    fill = MaterialTheme.colorScheme.outline,
-    content = MaterialTheme.colorScheme.onSurface,
-)
+private fun offlineGreyStyle(): GreyStyle {
+    val s = MaterialTheme.colorScheme
+    val base = if (isSystemInDarkTheme()) {
+        // Dark: light-grey fill over a dark-grey pill.
+        GreyStyle(s.surfaceVariant, s.outline, s.onSurface)
+    } else {
+        // Light: inverted — light fill over a dark-grey pill.
+        GreyStyle(s.outline, s.surfaceVariant, s.onSurface)
+    }
+    // Pull the fill closer to the track for a subtler contrast.
+    return base.copy(fill = lerp(base.track, base.fill, 0.45f))
+}
 
 @Composable
 private fun BatteryPill(
