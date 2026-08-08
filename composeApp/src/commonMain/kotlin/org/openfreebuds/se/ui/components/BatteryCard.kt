@@ -100,15 +100,15 @@ private data class GreyStyle(
 @Composable
 private fun offlineGreyStyle(): GreyStyle {
     val s = MaterialTheme.colorScheme
-    val base = if (isSystemInDarkTheme()) {
-        // Dark: light-grey fill over a dark-grey pill.
-        GreyStyle(s.surfaceVariant, s.outline, s.onSurface)
+    val dark = isSystemInDarkTheme()
+    val track = if (dark) s.surfaceVariant else s.outline
+    val fill = lerp(track, if (dark) s.outline else s.surfaceVariant, 0.45f)
+    return if (dark) {
+        GreyStyle(track, fill, s.onSurface)
     } else {
-        // Light: inverted — light fill over a dark-grey pill.
-        GreyStyle(s.outline, s.surfaceVariant, s.onSurface)
+        // Light theme: swap the track and the blended fill.
+        GreyStyle(fill, track, s.onSurface)
     }
-    // Pull the fill closer to the track for a subtler contrast.
-    return base.copy(fill = lerp(base.track, base.fill, 0.45f))
 }
 
 @Composable
