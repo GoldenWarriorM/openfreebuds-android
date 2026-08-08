@@ -51,11 +51,7 @@ fun BatteryCard(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        val greyStyle = if (isSystemInDarkTheme()) {
-            OfflineGreyDark
-        } else {
-            OfflineGreyLight
-        }
+        val greyStyle = offlineGreyStyle()
         val bothMissing = battery.missingLeft && battery.missingRight
         val forceGrey = !connected
         BatteryPill(
@@ -92,8 +88,7 @@ fun BatteryCard(
 }
 
 /**
- * Offline pill palette: a neutral grey family for both the track (background)
- * and the fill, fixed so the fill stays clearly visible on any dynamic scheme.
+ * Disabled/offline pill palette pulled from the Material You scheme.
  */
 private data class GreyStyle(
     val track: Color,
@@ -101,16 +96,11 @@ private data class GreyStyle(
     val content: Color,
 )
 
-private val OfflineGreyDark = GreyStyle(
-    track = Color(0xFF34343A),
-    fill = Color(0xFF6F6F78),
-    content = Color(0xFFDCDCE0),
-)
-
-private val OfflineGreyLight = GreyStyle(
-    track = Color(0xFF9C9CA4),
-    fill = Color(0xFFE9E9ED),
-    content = Color(0xFF38383D),
+@Composable
+private fun offlineGreyStyle(): GreyStyle = GreyStyle(
+    track = MaterialTheme.colorScheme.surfaceVariant,
+    fill = MaterialTheme.colorScheme.onSurfaceVariant,
+    content = MaterialTheme.colorScheme.onSurface,
 )
 
 @Composable
