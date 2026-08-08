@@ -101,14 +101,15 @@ private data class GreyStyle(
 private fun offlineGreyStyle(): GreyStyle {
     val s = MaterialTheme.colorScheme
     val dark = isSystemInDarkTheme()
-    val track = if (dark) s.surfaceVariant else s.outline
-    val fill = lerp(track, if (dark) s.outline else s.surfaceVariant, 0.45f)
-    return if (dark) {
-        GreyStyle(track, fill, s.onSurface)
+    val track = s.surfaceVariant
+    // Fixed 12% offset from the background: slightly lighter in dark theme,
+    // slightly darker in light theme. Predictable on any dynamic seed.
+    val fill = if (dark) {
+        lerp(track, Color.White, 0.12f)
     } else {
-        // Light theme: swap the track and the blended fill.
-        GreyStyle(fill, track, s.onSurface)
+        lerp(track, Color.Black, 0.12f)
     }
+    return GreyStyle(track, fill, s.onSurface)
 }
 
 @Composable
