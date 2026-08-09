@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_battery_expressive"
     android:minWidth="110dp"
     android:minHeight="110dp"
+    android:previewLayout="@layout/widget_battery_expressive_preview"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="2"
     android:targetCellHeight="2"
