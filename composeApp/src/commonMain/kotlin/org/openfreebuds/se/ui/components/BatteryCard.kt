@@ -131,23 +131,31 @@ private fun BatteryPill(
     val offline = forceGrey || level == null || (missing && !bothMissing)
 
     val dark = isSystemInDarkTheme()
+    val trackColor = animateColorAsState(
+        targetValue = if (offline) {
+            greyStyle.track
+        } else if (dark) {
+            platformAccentTone(800)
+        } else {
+            // Light theme: track uses the former fill tone.
+            platformAccentTone(100)
+        },
+        animationSpec = tween(durationMillis = 600),
+        label = "pillTrackColor",
+    ).value
     val fillColor = animateColorAsState(
         targetValue = when {
             offline -> greyStyle.fill
             level != null && level <= 20 -> MaterialTheme.colorScheme.errorContainer
-            else -> platformAccentTone(if (dark) 700 else 100)
+            else -> if (dark) {
+                platformAccentTone(700)
+            } else {
+                // Light theme: fill is the former track, lightened further.
+                lerp(platformAccentTone(200), Color.White, 0.35f)
+            }
         },
         animationSpec = tween(durationMillis = 600),
         label = "pillFillColor",
-    ).value
-    val trackColor = animateColorAsState(
-        targetValue = if (offline) {
-            greyStyle.track
-        } else {
-            platformAccentTone(if (dark) 800 else 200)
-        },
-        animationSpec = tween(durationMillis = 600),
-        label = "pillTrackColor",
     ).value
     val contentColor = animateColorAsState(
         targetValue = if (offline) {
