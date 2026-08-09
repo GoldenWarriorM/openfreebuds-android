@@ -42,4 +42,7 @@ interface DeviceProvider {
 
     fun refresh()
     fun requestPermission(onResult: (Boolean) -> Unit)
+
+    /** Best-effort: turns Bluetooth on, if supported and permitted. */
+    fun enableBluetooth()
 }

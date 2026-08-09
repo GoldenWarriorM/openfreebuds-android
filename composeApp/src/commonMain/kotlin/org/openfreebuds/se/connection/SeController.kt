@@ -123,6 +123,51 @@ class SeController(
 
     fun refreshDevices() = provider.refresh()
 
+    /**
+     * One-tap connect flow used by the status header button: turns Bluetooth
+     * on when disabled, scans bonded devices and connects to the first match,
+     * then surfaces any error in the status.
+     */
+    fun connectOrEnable() {
+        reconnectJob?.cancel()
+        reconnectJob = null
+        _reconnecting.value = false
+        _lastError.value = null
+        if (bluetoothEnabled.value == false) {
+            provider.enableBluetooth()
+        }
+        scope.launch {
+            var waited = 0
+            while (bluetoothEnabled.value != true && waited < 40) {
+                delay(250)
+                waited++
+            }
+            connectFirstAvailable()
+        }
+    }
+
+    private suspend fun connectFirstAvailable() {
+        provider.refresh()
+        val candidate = provider.devices.value.firstOrNull() ?: alsoWaitForDevices()
+        if (candidate != null) {
+            connect(candidate)
+        } else {
+            _lastError.value = "No FreeBuds SE devices found. Make sure they are paired."
+            _uiState.value = ConnectionState.Disconnected(null)
+        }
+    }
+
+    private suspend fun alsoWaitForDevices(): SeDevice? {
+        var attempts = 0
+        while (attempts < 10) {
+            delay(700)
+            provider.refresh()
+            provider.devices.value.firstOrNull()?.let { return it }
+            attempts++
+        }
+        return null
+    }
+
     fun connect(device: SeDevice) {
         userDisconnected = false
         manualConnect = true

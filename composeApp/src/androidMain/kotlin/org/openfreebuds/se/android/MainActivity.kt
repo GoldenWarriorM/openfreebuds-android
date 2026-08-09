@@ -34,6 +34,12 @@ class MainActivity : ComponentActivity() {
         if (granted) refreshAndMaybeConnect()
     }
 
+    private val enableBluetoothLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) {
+        SeEngine.platformTransport?.onBluetoothEnableResult()
+    }
+
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
@@ -50,6 +56,7 @@ class MainActivity : ComponentActivity() {
 
         controller = SeEngine.ensureStarted(applicationContext)
         SeEngine.platformTransport?.permissionLauncher = permissionLauncher
+        SeEngine.platformTransport?.enableBluetoothLauncher = enableBluetoothLauncher
 
         if (prefs.getBoolean("notification_enabled", false)) {
             controller.setNotificationsEnabled(true)

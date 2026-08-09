@@ -25,9 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BluetoothDisabled
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import org.openfreebuds.se.connection.ConnectionState
 import org.openfreebuds.se.connection.SeController
 import org.openfreebuds.se.ui.components.BatteryCard
-import org.openfreebuds.se.ui.components.DevicePanel
 import org.openfreebuds.se.ui.components.DoubleTapPanel
 
 @Composable
@@ -49,8 +49,6 @@ fun HomeScreen(controller: SeController) {
     val state by controller.state.collectAsState()
     val battery by controller.battery.collectAsState()
     val doubleTap by controller.doubleTap.collectAsState()
-    val devices by controller.devices.collectAsState()
-    val activeDevice by controller.activeDevice.collectAsState()
     val bluetoothEnabled by controller.bluetoothEnabled.collectAsState()
     val lastError by controller.lastError.collectAsState()
     val reconnecting by controller.reconnecting.collectAsState()
@@ -89,11 +87,10 @@ fun HomeScreen(controller: SeController) {
             state = state,
             batteryKnown = battery.isKnown,
             reconnecting = reconnecting,
+            bluetoothEnabled = bluetoothEnabled,
+            connecting = connecting,
+            onConnectEnable = controller::connectOrEnable,
         )
-
-            if (bluetoothEnabled == false && !connected) {
-                BluetoothOffCard(onPermission = { controller.requestPermission { } })
-            }
 
             if (lastError != null) {
                 Surface(
@@ -124,15 +121,6 @@ fun HomeScreen(controller: SeController) {
                 onLeft = { controller.setDoubleTap(it, doubleTap?.right ?: it) },
                 onRight = { controller.setDoubleTap(doubleTap?.left ?: it, it) },
             )
-
-            DevicePanel(
-                devices = devices,
-                activeDevice = activeDevice,
-                connecting = connecting,
-                onConnect = controller::connect,
-                onDisconnect = controller::disconnect,
-                onRefresh = controller::refreshDevices,
-            )
     }
 }
 
@@ -141,9 +129,12 @@ private fun ConnectionHeader(
     state: ConnectionState,
     batteryKnown: Boolean,
     reconnecting: Boolean,
+    bluetoothEnabled: Boolean?,
+    connecting: Boolean,
+    onConnectEnable: () -> Unit,
 ) {
     val connected = state is ConnectionState.Connected
-    val connecting = state is ConnectionState.Connecting
+    val connectingNow = connecting || state is ConnectionState.Connecting
     val headerBg = animateColorAsState(
         targetValue = if (connected) {
             MaterialTheme.colorScheme.primaryContainer
@@ -182,7 +173,7 @@ private fun ConnectionHeader(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(20.dp),
         ) {
-            if (connecting) {
+            if (connectingNow) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(36.dp),
                     strokeWidth = 3.dp,
@@ -199,11 +190,12 @@ private fun ConnectionHeader(
                 )
             }
             Spacer(Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = when {
                         connected -> "Connected"
                         reconnecting -> "Reconnecting…"
+                        connectingNow -> "Connecting…"
                         state is ConnectionState.Error -> "Connection error"
                         else -> "Not connected"
                     },
@@ -211,6 +203,18 @@ private fun ConnectionHeader(
                     fontWeight = FontWeight.Bold,
                     color = headerText,
                 )
+            }
+            if (!connectingNow && !connected) {
+                IconButton(
+                    onClick = onConnectEnable,
+                    enabled = bluetoothEnabled != null,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = "Connect",
+                        tint = headerText,
+                    )
+                }
             }
         }
     }
@@ -252,32 +256,6 @@ private fun NotificationPanel(
                 checked = enabled,
                 onCheckedChange = onEnabledChange,
             )
-        }
-    }
-}
-
-@Composable
-private fun BluetoothOffCard(onPermission: () -> Unit) {    Surface(
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Bluetooth is disabled",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = "Enable Bluetooth and open this app again to find your FreeBuds SE.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Spacer(Modifier.height(12.dp))
-            Button(onClick = onPermission) {
-                Text("Open settings")
-            }
         }
     }
 }

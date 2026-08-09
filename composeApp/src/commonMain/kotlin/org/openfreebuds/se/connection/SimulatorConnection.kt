@@ -48,6 +48,10 @@ class SimulatorConnection(
 
     override fun requestPermission(onResult: (Boolean) -> Unit) = onResult(true)
 
+    override fun enableBluetooth() {
+        _enabled.value = true
+    }
+
     override fun connect(device: SeDevice) {
         _state.value = ConnectionState.Connecting
         scope.launch {

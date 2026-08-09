@@ -2,7 +2,9 @@ package org.openfreebuds.se.android
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothA2dp
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothProfile
 import android.bluetooth.BluetoothSocket
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -56,9 +58,13 @@ class AndroidBluetoothTransport(
     private var socket: BluetoothSocket? = null
     private var recvJob: kotlinx.coroutines.Job? = null
     private val writeMutex = Mutex()
+    private var a2dpProfile: BluetoothA2dp? = null
+    private var a2dpRequestedFor: String? = null
 
     var permissionLauncher: ActivityResultLauncher<String>? = null
+    var enableBluetoothLauncher: ActivityResultLauncher<Intent>? = null
     private var pendingDevice: SeDevice? = null
+    private var pendingEnable = false
 
     override val needsPermission: Boolean
         get() = ContextCompat.checkSelfPermission(
@@ -138,6 +144,23 @@ class AndroidBluetoothTransport(
         }
     }
 
+    @SuppressLint("MissingPermission")
+    override fun enableBluetooth() {
+        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return
+        if (adapter.isEnabled) return
+        if (needsPermission && permissionLauncher != null) {
+            pendingEnable = true
+            permissionLauncher?.launch("android.permission.BLUETOOTH_CONNECT")
+            return
+        }
+        if (enableBluetoothLauncher != null) {
+            // Ask the user through the system dialog (works on Android 12+).
+            enableBluetoothLauncher?.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
+            return
+        }
+        runCatching { adapter.enable() }
+    }
+
     private fun queryDevices(): List<SeDevice> {
         if (needsPermission) return emptyList()
         val adapter = BluetoothAdapter.getDefaultAdapter() ?: return emptyList()
@@ -165,10 +188,25 @@ class AndroidBluetoothTransport(
     }
 
     /** Called by the activity after the permission dialog result. */
+    fun onBluetoothEnableResult() {
+        pendingEnable = false
+        pendingDevice?.let { device ->
+            pendingDevice = null
+            scope.launch { openConnection(device) }
+        }
+    }
+
+    /** Called by the activity after the permission dialog result. */
     fun onPermissionResult(granted: Boolean) {
-        val device = pendingDevice ?: return
+        val device = pendingDevice
         pendingDevice = null
-        if (granted) {
+        val enable = pendingEnable
+        pendingEnable = false
+        if (enable && granted) {
+            enableBluetooth()
+            return
+        }
+        if (device != null && granted) {
             scope.launch { openConnection(device) }
         }
     }
@@ -177,6 +215,7 @@ class AndroidBluetoothTransport(
         android.util.Log.d("FreeBudsSE", "disconnect() called")
         recvJob?.cancel()
         recvJob = null
+        a2dpRequestedFor = null
         val sock = socket
         socket = null
         _state.value = ConnectionState.Disconnected(null)
@@ -206,6 +245,7 @@ class AndroidBluetoothTransport(
 
     override fun close() {
         disconnect()
+        closeA2dpProxy()
         try {
             appContext.unregisterReceiver(bluetoothStateReceiver)
         } catch (_: Exception) {
@@ -214,6 +254,60 @@ class AndroidBluetoothTransport(
             appContext.unregisterReceiver(aclStateReceiver)
         } catch (_: Exception) {
         }
+    }
+
+    private fun closeA2dpProxy() {
+        if (a2dpProfile != null) {
+            runCatching {
+                BluetoothAdapter.getDefaultAdapter()
+                    ?.closeProfileProxy(BluetoothProfile.A2DP, a2dpProfile)
+            }
+            a2dpProfile = null
+            a2dpRequestedFor = null
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun requestAudioConnection(device: BluetoothDevice) {
+        if (needsPermission || isAclAlreadyConnectedSoundProfile(device)) {
+            // Audio is delivered automatically by the system; nothing to do.
+            if (needsPermission) {
+                android.util.Log.d("FreeBudsSE", "audio connect skipped (no permission)")
+            }
+            return
+        }
+        val adapter = BluetoothAdapter.getDefaultAdapter() ?: return
+        val profileListener = object : BluetoothProfile.ServiceListener {
+            override fun onServiceConnected(profile: Int, proxy: BluetoothProfile) {
+                if (profile == BluetoothProfile.A2DP && proxy is BluetoothA2dp) {
+                    a2dpProfile = proxy
+                    if (a2dpRequestedFor == device.address && proxy.getConnectionState(device) != BluetoothProfile.STATE_CONNECTED) {
+                        android.util.Log.d("FreeBudsSE", "requesting A2DP connect ${device.address}")
+                        try {
+                            // connect() is a hidden API on BluetoothA2dp.
+                            proxy.javaClass
+                                .getMethod("connect", BluetoothDevice::class.java)
+                                .invoke(proxy, device)
+                        } catch (_: Exception) {
+                        }
+                    }
+                }
+            }
+
+            override fun onServiceDisconnected(profile: Int) {
+                if (profile == BluetoothProfile.A2DP) {
+                    a2dpProfile = null
+                }
+            }
+        }
+        a2dpRequestedFor = device.address
+        runCatching { adapter.getProfileProxy(appContext, profileListener, BluetoothProfile.A2DP) }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun isAclAlreadyConnectedSoundProfile(device: BluetoothDevice): Boolean {
+        val a2dp = a2dpProfile ?: return false
+        return a2dp.connectedDevices.any { it.address == device.address }
     }
 
     private suspend fun openConnection(device: SeDevice) {
@@ -239,6 +333,7 @@ class AndroidBluetoothTransport(
         _aclConnected.add(device.address)
         _state.value = ConnectionState.Connected(device)
         android.util.Log.d("FreeBudsSE", "openConnection: Connected OK")
+        requestAudioConnection(remote)
         recvJob = scope.launch {
             val input = sock.inputStream
             val buffer = ByteArray(4096)
