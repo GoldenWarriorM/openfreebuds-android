@@ -7,14 +7,11 @@
         </shape>
     </item>
     <item android:id="@android:id/progress">
-        <scale
-            android:scaleGravity="left"
-            android:scaleHeight="0%"
-            android:scaleWidth="100%">
+        <clip>
             <shape>
                 <corners android:radius="18dp" />
                 <solid android:color="@color/fb_bar_color" />
             </shape>
-        </scale>
+        </clip>
     </item>
 </layer-list>
