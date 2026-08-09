@@ -16,8 +16,8 @@
 
         <ImageView
             android:id="@+id/row_left_icon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:contentDescription="@string/widget_row_icon"
             android:src="@drawable/ic_left_bud"
             android:tint="@color/widget_primary" />
@@ -71,8 +71,8 @@
 
         <ImageView
             android:id="@+id/row_right_icon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:contentDescription="@string/widget_row_icon"
             android:src="@drawable/ic_right_bud"
             android:tint="@color/widget_primary" />
@@ -126,8 +126,8 @@
 
         <ImageView
             android:id="@+id/row_case_icon"
-            android:layout_width="22dp"
-            android:layout_height="22dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:contentDescription="@string/widget_row_icon"
             android:src="@drawable/ic_case"
             android:tint="@color/widget_primary" />

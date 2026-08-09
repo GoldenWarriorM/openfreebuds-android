@@ -34,8 +34,8 @@
 
             <ImageView
                 android:id="@+id/fb_left_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:contentDescription="@string/widget_row_icon"
                 android:src="@drawable/ic_left_bud"
                 android:tint="@color/fb_text_color" />
@@ -104,8 +104,8 @@
 
             <ImageView
                 android:id="@+id/fb_right_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:contentDescription="@string/widget_row_icon"
                 android:src="@drawable/ic_right_bud"
                 android:tint="@color/fb_text_color" />
@@ -173,8 +173,8 @@
 
             <ImageView
                 android:id="@+id/fb_case_icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
                 android:contentDescription="@string/widget_row_icon"
                 android:src="@drawable/ic_case"
                 android:tint="@color/fb_text_color" />
