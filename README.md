@@ -31,8 +31,8 @@
       <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/home.png" alt="Home screen" width="280" />
     </td>
     <td>
-      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/widget.jpg" alt="Home-screen widget" width="420" /><br/>
-      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/notification.jpg" alt="Battery notification" width="420" />
+      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/widget.png" alt="Home-screen widget" width="260" /><br/>
+      <img src="https://github.com/GoldenWarriorM/openfreebuds-android/raw/main/screenshots/notification.png" alt="Battery notification" width="480" />
     </td>
   </tr></table>
 </p>
