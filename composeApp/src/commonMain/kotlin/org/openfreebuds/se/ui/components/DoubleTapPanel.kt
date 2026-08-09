@@ -120,11 +120,20 @@ private fun TapActionSelector(
                 TapAction.VOICE_ASSISTANT,
             )
             ordered.forEachIndexed { index, action ->
+                val tapColors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    activeBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    inactiveContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                )
                 SegmentedButton(
                     selected = selected == action,
                     onClick = { onSelect(action) },
                     enabled = enabled,
                     icon = {},
+                    colors = tapColors,
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index,
                         count = ordered.size,
