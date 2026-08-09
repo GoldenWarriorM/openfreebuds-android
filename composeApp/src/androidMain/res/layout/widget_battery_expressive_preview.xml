@@ -38,16 +38,6 @@
                 android:tint="@color/fb_text_color" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:fontFamily="sans-serif"
-                android:text="@string/widget_row_left"
-                android:textColor="@color/fb_text_color"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1" />
@@ -93,16 +83,6 @@
                 android:tint="@color/fb_text_color" />
 
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:fontFamily="sans-serif"
-                android:text="@string/widget_row_right"
-                android:textColor="@color/fb_text_color"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1" />
@@ -145,16 +125,6 @@
                 android:contentDescription="@string/widget_row_icon"
                 android:src="@drawable/ic_case"
                 android:tint="@color/fb_text_color" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:fontFamily="sans-serif"
-                android:text="@string/widget_row_case"
-                android:textColor="@color/fb_text_color"
-                android:textSize="16sp"
-                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="0dp"

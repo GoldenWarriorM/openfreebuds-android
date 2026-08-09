@@ -18,7 +18,7 @@ import org.openfreebuds.se.model.BatteryLevels
 class DebugWidgetSimulator : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val prev = BatteryWidgetProvider.WidgetData.load(context)
+        val prev = BatteryWidgetExpressiveProvider.WidgetData.load(context)
         val left = intent.getIntExtra("left", prev.left ?: -1)
         val right = intent.getIntExtra("right", prev.right ?: -1)
         val case = intent.getIntExtra("case", prev.case ?: -1)
@@ -38,7 +38,7 @@ class DebugWidgetSimulator : BroadcastReceiver() {
             missingCase = case < 0,
         )
 
-        BatteryWidgetProvider.saveAndUpdate(context, levels)
+        BatteryWidgetExpressiveProvider.saveAndUpdate(context, levels)
 
         // Also push into the running app's controller so the in-app battery
         // card updates (and exercises the offline grey styles) on the phone.

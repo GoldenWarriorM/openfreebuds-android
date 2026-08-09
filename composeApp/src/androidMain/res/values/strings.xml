@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">FreeBuds SE</string>
-    <string name="widget_title">FreeBuds SE</string>
     <string name="widget_description">FreeBuds SE battery levels</string>
     <string name="widget_row_icon">earbud icon</string>
     <string name="widget_row_charging">charging</string>

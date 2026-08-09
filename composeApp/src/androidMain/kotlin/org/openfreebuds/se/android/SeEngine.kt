@@ -47,7 +47,7 @@ object SeEngine {
         tr.onAclConnected = { ctrl.onAclDeviceConnected(it) }
         tr.onAclDisconnected = { ctrl.onAclDeviceDisconnected(it) }
         ctrl.onBatteryChanged = { levels ->
-            BatteryWidgetProvider.saveAndUpdate(appCtx, levels)
+            BatteryWidgetExpressiveProvider.saveAndUpdate(appCtx, levels)
             BatteryNotification.update(appCtx, levels)
         }
 

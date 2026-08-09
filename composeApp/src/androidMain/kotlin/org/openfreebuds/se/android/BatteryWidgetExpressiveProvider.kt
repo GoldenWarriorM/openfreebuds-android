@@ -13,20 +13,53 @@ import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.RemoteViews
 import org.openfreebuds.se.R
+import org.openfreebuds.se.model.BatteryLevels
 import kotlin.math.roundToInt
 
 /**
- * Second home screen widget: three rounded "pill" boxes (left / right / case)
+ * Home screen widget: three rounded "pill" boxes (left / right / case)
  * each filled with a horizontal progress bar and showing the percentage.
  */
 class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
+
+    /** Widget data container and persistence. */
+    data class WidgetData(
+        val left: Int?,
+        val right: Int?,
+        val case: Int?,
+        val chargingLeft: Boolean,
+        val chargingRight: Boolean,
+        val chargingCase: Boolean,
+    ) {
+        companion object {
+            private const val PREFS_NAME = "battery_widget"
+            private const val KEY_LEFT = "left"
+            private const val KEY_RIGHT = "right"
+            private const val KEY_CASE = "case"
+            private const val KEY_CHARGING_LEFT = "charging_left"
+            private const val KEY_CHARGING_RIGHT = "charging_right"
+            private const val KEY_CHARGING_CASE = "charging_case"
+
+            fun load(context: Context): WidgetData {
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                return WidgetData(
+                    left = prefs.getInt(KEY_LEFT, -1).takeIf { it >= 0 },
+                    right = prefs.getInt(KEY_RIGHT, -1).takeIf { it >= 0 },
+                    case = prefs.getInt(KEY_CASE, -1).takeIf { it >= 0 },
+                    chargingLeft = prefs.getBoolean(KEY_CHARGING_LEFT, false),
+                    chargingRight = prefs.getBoolean(KEY_CHARGING_RIGHT, false),
+                    chargingCase = prefs.getBoolean(KEY_CHARGING_CASE, false),
+                )
+            }
+        }
+    }
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        val data = BatteryWidgetProvider.WidgetData.load(context)
+        val data = WidgetData.load(context)
         appWidgetIds.forEach { id ->
             appWidgetManager.updateAppWidget(
                 id,
@@ -42,7 +75,7 @@ class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
         appWidgetId: Int,
         newOptions: android.os.Bundle,
     ) {
-        val data = BatteryWidgetProvider.WidgetData.load(context)
+        val data = WidgetData.load(context)
         storeShowLabels(context, appWidgetId, showLabels(newOptions))
         appWidgetManager.updateAppWidget(
             appWidgetId,
@@ -55,6 +88,38 @@ class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
 
         /** Progress bar tween length, in milliseconds. */
         private const val ANIM_DURATION_MS = 600L
+
+        private const val PREFS_NAME = "battery_widget"
+        private const val KEY_LEFT = "left"
+        private const val KEY_RIGHT = "right"
+        private const val KEY_CASE = "case"
+        private const val KEY_CHARGING_LEFT = "charging_left"
+        private const val KEY_CHARGING_RIGHT = "charging_right"
+        private const val KEY_CHARGING_CASE = "charging_case"
+
+        /** Persists the latest battery levels and updates every widget instance. */
+        fun saveAndUpdate(context: Context, battery: BatteryLevels) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putInt(KEY_LEFT, battery.left ?: -1)
+                .putInt(KEY_RIGHT, battery.right ?: -1)
+                .putInt(KEY_CASE, battery.case ?: -1)
+                .putBoolean(KEY_CHARGING_LEFT, battery.chargingLeft)
+                .putBoolean(KEY_CHARGING_RIGHT, battery.chargingRight)
+                .putBoolean(KEY_CHARGING_CASE, battery.chargingCase)
+                .apply()
+
+            updateAll(
+                context,
+                WidgetData(
+                    battery.left,
+                    battery.right,
+                    battery.case,
+                    battery.chargingLeft,
+                    battery.chargingRight,
+                    battery.chargingCase,
+                ),
+            )
+        }
 
         /**
          * Per-widget animated state. [Float.NaN] fields mean "no known level",
@@ -99,7 +164,7 @@ class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
             labelsPref(context).edit().putBoolean(LABEL_KEY + id, show).apply()
         }
 
-        fun updateAll(context: Context, data: BatteryWidgetProvider.WidgetData) {
+        fun updateAll(context: Context, data: WidgetData) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(
                 ComponentName(context, BatteryWidgetExpressiveProvider::class.java),
@@ -173,7 +238,7 @@ class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
             rendered[id] = levels
             val showLabel = storedShowLabels(context, id)
                 ?: showLabels(manager.getAppWidgetOptions(id))
-            val data = BatteryWidgetProvider.WidgetData(
+            val data = WidgetData(
                 left = levels.left.snapInt(),
                 right = levels.right.snapInt(),
                 case = levels.case.snapInt(),
@@ -213,7 +278,7 @@ class BatteryWidgetExpressiveProvider : AppWidgetProvider() {
 
         private fun buildViews(
             context: Context,
-            data: BatteryWidgetProvider.WidgetData,
+            data: WidgetData,
             showLabels: Boolean,
         ): RemoteViews {
             val views = RemoteViews(context.packageName, R.layout.widget_battery_expressive)
