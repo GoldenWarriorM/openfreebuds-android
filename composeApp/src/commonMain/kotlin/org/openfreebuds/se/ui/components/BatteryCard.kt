@@ -139,8 +139,8 @@ private fun BatteryPill(
         } else if (dark) {
             platformAccentTone(800)
         } else {
-            // Light theme: track uses the former fill tone.
-            platformAccentTone(100)
+            // Light theme: the uncharged part is white, like the Double tap panel.
+            MaterialTheme.colorScheme.surfaceContainerLowest
         },
         animationSpec = tween(durationMillis = 600),
         label = "pillTrackColor",
@@ -152,8 +152,8 @@ private fun BatteryPill(
             else -> if (dark) {
                 platformAccentTone(700)
             } else {
-                // Light theme: fill is the former track, lightened further.
-                lerp(platformAccentTone(200), Color.White, 0.35f)
+                // Light theme: the charged fill matches the Connected header background.
+                MaterialTheme.colorScheme.primaryContainer
             }
         },
         animationSpec = tween(durationMillis = 600),
