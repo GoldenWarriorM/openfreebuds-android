@@ -62,7 +62,15 @@ fun HomeScreen(controller: SeController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                if (isSystemInDarkTheme()) {
+                    MaterialTheme.colorScheme.background
+                } else {
+                    // LineageOS Settings light home background: a grey tone
+                    // (surfaceContainer approx #EEEEEE), cards stay white.
+                    MaterialTheme.colorScheme.surfaceContainer
+                },
+            )
             .windowInsetsPadding(WindowInsets.statusBars)
             .verticalScroll(rememberScrollState())
             .padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 20.dp),
