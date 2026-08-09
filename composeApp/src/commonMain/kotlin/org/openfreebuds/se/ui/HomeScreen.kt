@@ -3,6 +3,7 @@ package org.openfreebuds.se.ui
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
@@ -138,8 +139,10 @@ private fun ConnectionHeader(
     val headerBg = animateColorAsState(
         targetValue = if (connected) {
             MaterialTheme.colorScheme.primaryContainer
+        } else if (isSystemInDarkTheme()) {
+            MaterialTheme.colorScheme.surfaceContainer
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            MaterialTheme.colorScheme.surfaceContainerLowest
         },
         animationSpec = tween(durationMillis = 600),
         label = "connectionHeaderBg",
@@ -212,7 +215,11 @@ private fun NotificationPanel(
 ) {
     Surface(
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        color = if (isSystemInDarkTheme()) {
+            MaterialTheme.colorScheme.surfaceContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLowest
+        },
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(

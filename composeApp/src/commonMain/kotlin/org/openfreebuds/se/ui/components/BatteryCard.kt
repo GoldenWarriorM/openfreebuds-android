@@ -101,7 +101,9 @@ private data class GreyStyle(
 private fun offlineGreyStyle(): GreyStyle {
     val s = MaterialTheme.colorScheme
     val dark = isSystemInDarkTheme()
-    val track = s.surfaceVariant
+    // AOSP Settings look: light theme keeps the items white
+    // (surfaceContainerLowest), dark theme uses the elevated surface.
+    val track = if (dark) s.surfaceContainer else s.surfaceContainerLowest
     // Fixed 12% offset from the background: slightly lighter in dark theme,
     // slightly darker in light theme. Predictable on any dynamic seed.
     val fill = if (dark) {
@@ -109,7 +111,7 @@ private fun offlineGreyStyle(): GreyStyle {
     } else {
         lerp(track, Color.Black, 0.12f)
     }
-    return GreyStyle(track, fill, s.onSurface)
+    return GreyStyle(track, fill, s.onSurfaceVariant)
 }
 
 @Composable
